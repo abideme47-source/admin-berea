@@ -5,12 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 import AdminGuard from '@/components/AdminGuard'
 import BottomNav from '@/components/BottomNav'
 import AdminHeader from '@/components/AdminHeader'
+import QuoteModal from '@/components/QuoteModal'
 import { AdminContext } from '@/components/AdminGuard'
 
 type Book = { id: number; title: string; author: string; status: string; cover: string; created_at?: string; year?: string; language?: string; translator?: string; quote?: string; description?: string; is_new_arrival?: boolean; is_community_favorite?: boolean }
 type Comment = { id: number; book_id: number; author_name: string; content: string; created_at: string; book_title?: string }
 type Like = { book_title: string; count: number }
 type Setting = { key: string; value: string }
+type Quote = { id: string; book_id: number; quote: string; book_title?: string; book_author?: string }
 
 function TrendingBook({ title, count, label }: { title: string; count: number; label: string }) {
   return (
@@ -35,14 +37,17 @@ export default function DashboardPage() {
   const [recentComments, setRecentComments] = useState<Comment[]>([])
   const [recentUsers, setRecentUsers] = useState<any[]>([])
   const [recentBooks, setRecentBooks] = useState<Book[]>([])
+  const [quotes, setQuotes] = useState<Quote[]>([])
   const [totalBooks, setTotalBooks] = useState(0)
   const [totalOrders, setTotalOrders] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [showQuoteModal, setShowQuoteModal] = useState(false)
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null)
   const supabase = createClient()
 
   async function loadData() {
     setLoading(true)
-    const [{ data: booksData }, { count: booksCount }, { data: commentsData }, { data: likesData }, { data: usersData }, { data: settingsData }, { count: ordersCount }] = await Promise.all([
+    const [{ data: booksData }, { count: booksCount }, { data: commentsData }, { data: likesData }, { data: usersData }, { data: settingsData }, { count: ordersCount }, { data: quotesData }] = await Promise.all([
       supabase.from('books').select('*'),
       supabase.from('books').select('*', { count: 'exact', head: true }),
       supabase.from('book_comments').select('*').order('created_at', { ascending: false }).limit(5),
@@ -54,6 +59,7 @@ export default function DashboardPage() {
       supabase.auth.admin.listUsers(),
       supabase.from('site_settings').select('*'),
       supabase.from('orders').select('*', { count: 'exact', head: true }),
+      supabase.from('quotes').select('*, book:book_id(id, title, author)'),
     ])
 
     setBooks(booksData || [])
@@ -64,6 +70,12 @@ export default function DashboardPage() {
     setRecentUsers((usersData?.users || []).slice(0, 5))
     setRecentBooks((booksData || []).slice(0, 5))
     setTotalOrders(ordersCount || 0)
+    const enrichedQuotes = (quotesData || []).map((q: any) => ({
+      ...q,
+      book_title: q.book?.title || 'Unknown',
+      book_author: q.book?.author || 'Unknown',
+    }))
+    setQuotes(enrichedQuotes)
     const settingsMap: Record<string, string> = {}
     ;(settingsData || []).forEach((s: Setting) => { settingsMap[s.key] = s.value || '' })
     setSettings(settingsMap)
@@ -207,36 +219,19 @@ export default function DashboardPage() {
               <div className="section-card">
                 <h2 className="section-title">Active Book Quotes</h2>
                 {(() => {
-                  const quoted = books.filter((b) => b.quote && b.quote.trim().length > 0)
-                  const availableBooks = books.filter((b) => !b.quote || b.quote.trim().length === 0)
-                  if (books.length === 0) return <p style={{ fontSize: 13, color: 'var(--muted)' }}>No books yet</p>
+                  if (quotes.length === 0) return <p style={{ fontSize: 13, color: 'var(--muted)' }}>No quotes added yet. Add quotes from the Books page.</p>
                   return (
                     <div>
-                      {quoted.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
-                          {quoted.map((b) => (
-                            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13, flexWrap: 'wrap' }}>
-                              <span style={{ flex: 1, minWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                <span style={{ fontWeight: 600 }}>{b.title}</span>
-                                <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 11 }}>"{b.quote}"</span>
-                              </span>
-                              <button className="btn btn-sm btn-secondary" onClick={() => { const newQuote = prompt('Edit quote:', b.quote || ''); if (newQuote !== null) { supabase.from('books').update({ quote: newQuote }).eq('id', b.id).then(() => loadData()) } }}>Edit</button>
-                              <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('books').update({ quote: '' }).eq('id', b.id); loadData() }}>Remove</button>
-                            </div>
-                          ))}
+                      {quotes.map((q) => (
+                        <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: 13, flexWrap: 'wrap' }}>
+                          <span style={{ flex: 1, minWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontWeight: 600 }}>{q.book_title}</span>
+                            <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 11 }}>"{q.quote}"</span>
+                          </span>
+                          <button className="btn btn-sm btn-secondary" onClick={() => { setEditingQuote(q); setShowQuoteModal(true) }}>Edit</button>
+                          <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('quotes').delete().eq('id', q.id); loadData() }}>Remove</button>
                         </div>
-                      )}
-                      {availableBooks.length > 0 && (
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <select id="add-quote-book" className="input" defaultValue="" style={{ flex: 1, minWidth: 200, minHeight: 40 }}>
-                            <option value="">Add quote to a book...</option>
-                            {availableBooks.map((b) => (
-                              <option key={b.id} value={b.id}>{b.title} — {b.author}</option>
-                            ))}
-                          </select>
-                          <button className="btn btn-sm btn-primary" onClick={async () => { const select = document.getElementById('add-quote-book') as HTMLSelectElement | null; const id = select?.value; if (!id) return; const quote = prompt('Enter quote for this book:'); if (!quote) return; await supabase.from('books').update({ quote }).eq('id', Number(id)); loadData(); if (select) select.value = '' }}>Add Quote</button>
-                        </div>
-                      )}
+                      ))}
                     </div>
                   )
                 })()}
@@ -244,6 +239,9 @@ export default function DashboardPage() {
             </>
           )}
         </main>
+        {showQuoteModal && (
+          <QuoteModal quote={editingQuote} bookTitle={editingQuote?.book_title || ''} onClose={() => { setShowQuoteModal(false); setEditingQuote(null) }} onSave={loadData} />
+        )}
         <BottomNav />
       </div>
     </AdminGuard>

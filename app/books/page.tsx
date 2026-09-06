@@ -20,7 +20,6 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
   const [language, setLanguage] = useState(book?.language || '')
   const [translator, setTranslator] = useState(book?.translator || '')
   const [description, setDescription] = useState(book?.description || '')
-  const [quote, setQuote] = useState(book?.quote || '')
   const [isNewArrival, setIsNewArrival] = useState(book?.is_new_arrival || false)
   const [isCommunityFavorite, setIsCommunityFavorite] = useState(book?.is_community_favorite || false)
   const [coverFile, setCoverFile] = useState<File | null>(null)
@@ -77,7 +76,6 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
       language,
       translator,
       description,
-      quote,
       cover: coverUrl,
       is_new_arrival: isNewArrival,
       is_community_favorite: isCommunityFavorite,
@@ -167,10 +165,6 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
           <div className="form-group">
             <label className="label">Description</label>
             <textarea className="input" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} style={{ minHeight: 80, resize: 'vertical' }} placeholder="Brief description of the book" />
-          </div>
-          <div className="form-group">
-            <label className="label">Quote from the book</label>
-            <textarea className="input" rows={2} value={quote} onChange={(e) => setQuote(e.target.value)} style={{ minHeight: 60, resize: 'vertical' }} placeholder="A memorable quote from this book (will show in hero section)" />
           </div>
           <div className="form-group">
             <label className="label">Book Cover {!book ? '*' : ''}</label>
