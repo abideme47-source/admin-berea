@@ -27,7 +27,40 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
+  const [bookQuotes, setBookQuotes] = useState<any[]>([])
+  const [newQuote, setNewQuote] = useState('')
   const supabase = createClient()
+
+  useEffect(() => {
+    if (book) {
+      supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
+        setBookQuotes(data || [])
+      })
+    }
+  }, [book])
+
+  async function addQuote() {
+    if (!newQuote.trim() || !book) return
+    const { error } = await supabase.from('quotes').insert({ book_id: book.id, quote: newQuote.trim() })
+    if (error) {
+      setMessage('Error adding quote: ' + error.message)
+      setIsError(true)
+    } else {
+      setNewQuote('')
+      supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
+        setBookQuotes(data || [])
+      })
+    }
+  }
+
+  async function removeQuote(id: string) {
+    await supabase.from('quotes').delete().eq('id', id)
+    if (book) {
+      supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
+        setBookQuotes(data || [])
+      })
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -166,6 +199,22 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
             <label className="label">Description</label>
             <textarea className="input" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} style={{ minHeight: 80, resize: 'vertical' }} placeholder="Brief description of the book" />
           </div>
+          {book && (
+            <div className="form-group">
+              <label className="label">Quotes</label>
+              {bookQuotes.length === 0 && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 8px' }}>No quotes yet</p>}
+              {bookQuotes.map((q) => (
+                <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{q.quote}"</span>
+                  <button type="button" className="btn btn-sm btn-danger" onClick={() => removeQuote(q.id)}>Remove</button>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <input className="input" value={newQuote} onChange={(e) => setNewQuote(e.target.value)} placeholder="Add a quote..." style={{ flex: 1 }} />
+                <button type="button" className="btn btn-sm btn-primary" onClick={addQuote}>Add</button>
+              </div>
+            </div>
+          )}
           <div className="form-group">
             <label className="label">Book Cover {!book ? '*' : ''}</label>
             <input type="file" accept="image/*" className="input" onChange={handleFileChange} required={!book} style={{ padding: 8 }} />
