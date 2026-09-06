@@ -12,7 +12,7 @@ type Book = { id: number; title: string; author: string; status: string; cover: 
 type Comment = { id: number; book_id: number; author_name: string; content: string; created_at: string }
 type Like = { book_title: string; count: number }
 
-function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () => void; onSave: () => void }) {
+function BookModal({ book, onClose, onSave, onCreated }: { book: Book | null; onClose: () => void; onSave: () => void; onCreated?: (book: Book) => void }) {
   const [title, setTitle] = useState(book?.title || '')
   const [author, setAuthor] = useState(book?.author || '')
   const [status, setStatus] = useState(book?.status || 'NEW')
@@ -36,6 +36,8 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
       supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
         setBookQuotes(data || [])
       })
+    } else {
+      setBookQuotes([])
     }
   }, [book])
 
@@ -129,15 +131,19 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
         import('@/lib/activity').then(({ logActivity }) => logActivity('update_book', `Updated book: ${title}`))
       }
     } else {
-      const { error } = await supabase.from('books').insert(bookData)
+      const { data, error } = await supabase.from('books').insert(bookData).select('*').single()
       if (error) {
         setMessage('Error adding: ' + error.message)
         setIsError(true)
-      } else {
+      } else if (data) {
         setMessage('Book added!')
         setIsError(false)
         onSave()
-        setTimeout(onClose, 800)
+        if (onCreated) {
+          onCreated(data as Book)
+        } else {
+          setTimeout(onClose, 800)
+        }
         import('@/lib/activity').then(({ logActivity }) => logActivity('add_book', `Added book: ${title}`))
       }
     }
@@ -203,22 +209,21 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
             <label className="label">Description</label>
             <textarea className="input" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} style={{ minHeight: 80, resize: 'vertical' }} placeholder="Brief description of the book" />
           </div>
-          {book && (
-            <div className="form-group">
-              <label className="label">Quotes</label>
-              {bookQuotes.length === 0 && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 8px' }}>No quotes yet</p>}
-              {bookQuotes.map((q) => (
-                <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{q.quote}"</span>
-                  <button type="button" className="btn btn-sm btn-danger" onClick={() => removeQuote(q.id)}>Remove</button>
-                </div>
-              ))}
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <input className="input" value={newQuote} onChange={(e) => setNewQuote(e.target.value)} placeholder="Add a quote..." style={{ flex: 1 }} />
-                <button type="button" className="btn btn-sm btn-primary" onClick={addQuote}>Add</button>
+          <div className="form-group">
+            <label className="label">Quotes</label>
+            {!book && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 8px' }}>Save the book first to add quotes.</p>}
+            {bookQuotes.length === 0 && book && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 8px' }}>No quotes yet</p>}
+            {bookQuotes.map((q) => (
+              <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{q.quote}"</span>
+                <button type="button" className="btn btn-sm btn-danger" onClick={() => removeQuote(q.id)}>Remove</button>
               </div>
+            ))}
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input className="input" value={newQuote} onChange={(e) => setNewQuote(e.target.value)} placeholder="Add a quote..." style={{ flex: 1 }} disabled={!book} />
+              <button type="button" className="btn btn-sm btn-primary" onClick={addQuote} disabled={!book}>Add</button>
             </div>
-          )}
+          </div>
           <div className="form-group">
             <label className="label">Book Cover {!book ? '*' : ''}</label>
             <input type="file" accept="image/*" className="input" onChange={handleFileChange} required={!book} style={{ padding: 8 }} />
@@ -424,7 +429,7 @@ export default function BooksPage() {
             </main>
 
             {showModal && (
-              <BookModal book={editingBook} onClose={() => setShowModal(false)} onSave={loadData} />
+              <BookModal book={editingBook} onClose={() => setShowModal(false)} onSave={loadData} onCreated={(book) => { setEditingBook(book); }} />
             )}
 
             <BottomNav />
