@@ -13,15 +13,23 @@ export default function UsersPage() {
   const [users, setUsers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [error, setError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
     async function loadUsers() {
       setLoading(true)
-      const res = await fetch('/api/users')
-      if (res.ok) {
-        const data = await res.json()
-        setUsers(data.users || [])
+      try {
+        const res = await fetch('/api/users')
+        if (res.ok) {
+          const data = await res.json()
+          setUsers(data.users || [])
+        } else {
+          const data = await res.json()
+          setError(data.error || 'Failed to load users')
+        }
+      } catch (e) {
+        setError('Failed to load users')
       }
       setLoading(false)
     }
@@ -71,6 +79,11 @@ export default function UsersPage() {
                 </div>
               ) : (
                 <>
+                  {error && (
+                    <div style={{ padding: 10, borderRadius: 8, background: '#fee2e2', color: '#dc2626', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+                      {error}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div className="form-group" style={{ flex: 1, marginRight: 10, marginBottom: 0 }}>
                       <input
@@ -90,7 +103,7 @@ export default function UsersPage() {
                       <p>No users found</p>
                     </div>
                   ) : (
-                    <div className="section-card" style={{ padding: 0, overflowX: 'auto' }}>
+                    <div className="section-card" style={{ padding: 0 }}>
                       <div className="table-wrap">
                       <table className="table">
                         <thead>

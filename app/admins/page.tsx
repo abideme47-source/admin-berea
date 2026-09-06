@@ -38,29 +38,43 @@ export default function AdminsPage() {
     change_profile_info: true,
   })
   const [error, setError] = useState('')
+  const [apiError, setApiError] = useState('')
   const supabase = createClient()
 
   async function loadData() {
     setLoading(true)
-    const [adminsRes, usersRes] = await Promise.all([
-      fetch('/api/admins'),
-      fetch('/api/users'),
-    ])
-    const [adminsData, usersData] = await Promise.all([
-      adminsRes.json(),
-      usersRes.json(),
-    ])
-    const adminsWithEmail = (adminsData.admins || []).map((a: AdminRecord) => ({
-      ...a,
-      email: a.email || 'Unknown',
-    }))
-    adminsWithEmail.sort((a: AdminRecord, b: AdminRecord) => {
-      if (a.role === 'owner' && b.role !== 'owner') return -1
-      if (b.role === 'owner' && a.role !== 'owner') return 1
-      return 0
-    })
-    setAdmins(adminsWithEmail)
-    setUsers((usersData.users || []).filter((u: any) => u.email))
+    setError('')
+    setApiError('')
+    try {
+      const [adminsRes, usersRes] = await Promise.all([
+        fetch('/api/admins'),
+        fetch('/api/users'),
+      ])
+      const [adminsData, usersData] = await Promise.all([
+        adminsRes.json(),
+        usersRes.json(),
+      ])
+      if (!adminsRes.ok) {
+        throw new Error(adminsData.error || 'Failed to load admins')
+      }
+      if (!usersRes.ok) {
+        throw new Error(usersData.error || 'Failed to load users')
+      }
+      const adminsWithEmail = (adminsData.admins || []).map((a: AdminRecord) => ({
+        ...a,
+        email: a.email || 'Unknown',
+      }))
+      adminsWithEmail.sort((a: AdminRecord, b: AdminRecord) => {
+        if (a.role === 'owner' && b.role !== 'owner') return -1
+        if (b.role === 'owner' && a.role !== 'owner') return 1
+        return 0
+      })
+      setAdmins(adminsWithEmail)
+      setUsers((usersData.users || []).filter((u: any) => u.email))
+    } catch (e: any) {
+      console.error('Failed to load admins/users:', e)
+      setApiError(e.message || 'Failed to load data')
+    }
     setLoading(false)
   }
 
@@ -124,6 +138,11 @@ export default function AdminsPage() {
                 </div>
               ) : (
                 <>
+                  {apiError && (
+                    <div style={{ padding: 10, borderRadius: 8, background: '#fee2e2', color: '#dc2626', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+                      {apiError}
+                    </div>
+                  )}
                   {!showAdd ? (
                     <button className="btn btn-primary" onClick={() => setShowAdd(true)} style={{ marginBottom: 16 }}>
                       + Add Admin
@@ -175,7 +194,7 @@ export default function AdminsPage() {
                   {loading ? (
                     <div className="empty-state">Loading...</div>
                   ) : (
-                    <div className="section-card" style={{ padding: 0, overflowX: 'auto' }}>
+                    <div className="section-card" style={{ padding: 0 }}>
                       <div className="table-wrap">
                         <table className="table">
                           <thead>
