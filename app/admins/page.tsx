@@ -42,21 +42,25 @@ export default function AdminsPage() {
 
   async function loadData() {
     setLoading(true)
-    const [{ data: adminsData }, { data: usersData }] = await Promise.all([
-      supabase.from('admins').select('*').order('created_at', { ascending: false }),
-      supabase.auth.admin.listUsers(),
+    const [adminsRes, usersRes] = await Promise.all([
+      fetch('/api/admins'),
+      fetch('/api/users'),
     ])
-    const adminsWithEmail = (adminsData || []).map((a: AdminRecord) => {
-      const user = (usersData?.users || []).find((u: any) => u.id === a.user_id)
-      return { ...a, email: user?.email || 'Unknown' }
-    })
+    const [adminsData, usersData] = await Promise.all([
+      adminsRes.json(),
+      usersRes.json(),
+    ])
+    const adminsWithEmail = (adminsData.admins || []).map((a: AdminRecord) => ({
+      ...a,
+      email: a.email || 'Unknown',
+    }))
     adminsWithEmail.sort((a: AdminRecord, b: AdminRecord) => {
       if (a.role === 'owner' && b.role !== 'owner') return -1
       if (b.role === 'owner' && a.role !== 'owner') return 1
       return 0
     })
     setAdmins(adminsWithEmail)
-    setUsers((usersData?.users || []).filter((u: any) => u.email))
+    setUsers((usersData.users || []).filter((u: any) => u.email))
     setLoading(false)
   }
 

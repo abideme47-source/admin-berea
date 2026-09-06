@@ -18,13 +18,11 @@ export default function ActivityLogPage() {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const { data } = await supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(200)
-      const withEmail = await Promise.all((data || []).map(async (a: any) => {
-        if (!a.admin_id) return { ...a, admin_email: 'system' }
-        const { data: user } = await supabase.auth.admin.getUserById(a.admin_id)
-        return { ...a, admin_email: user?.user?.email || 'unknown' }
-      }))
-      setActivities(withEmail)
+      const res = await fetch('/api/activity-log')
+      if (res.ok) {
+        const data = await res.json()
+        setActivities(data.activities || [])
+      }
       setLoading(false)
     }
     load()

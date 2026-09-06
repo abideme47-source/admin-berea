@@ -16,24 +16,15 @@ export default function UsersPage() {
   const supabase = createClient()
 
   useEffect(() => {
-  async function loadUsers() {
-    setLoading(true)
-    const [{ data: usersData }, { data: adminsData }] = await Promise.all([
-      supabase.auth.admin.listUsers(),
-      supabase.from('admins').select('user_id, role'),
-    ])
-    const adminMap = new Map((adminsData || []).map((a: any) => [a.user_id, a.role]))
-    const list = (usersData?.users || []).map((u: any) => ({
-      id: u.id,
-      email: u.email || '',
-      name: u.user_metadata?.name || '',
-      role: adminMap.get(u.id) || 'member',
-      created_at: u.created_at,
-      last_sign_in_at: u.last_sign_in_at,
-    }))
-    setUsers(list)
-    setLoading(false)
-  }
+    async function loadUsers() {
+      setLoading(true)
+      const res = await fetch('/api/users')
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(data.users || [])
+      }
+      setLoading(false)
+    }
     loadUsers()
   }, [])
 
@@ -50,6 +41,21 @@ export default function UsersPage() {
     a.download = 'users.csv'
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  async function resetPassword(userId: string, userEmail: string) {
+    if (!confirm(`Send password reset email to ${userEmail}?`)) return
+    const res = await fetch('/api/users/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: userEmail }),
+    })
+    if (res.ok) {
+      alert('Password reset email sent successfully!')
+    } else {
+      const data = await res.json()
+      alert('Error: ' + data.error)
+    }
   }
 
   return (
@@ -94,6 +100,7 @@ export default function UsersPage() {
                             <th>Role</th>
                             <th>Joined</th>
                             <th>Last Sign In</th>
+                            <th></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -112,6 +119,11 @@ export default function UsersPage() {
                               </td>
                               <td style={{ color: 'var(--muted)', fontSize: 12 }}>
                                 {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
+                              </td>
+                              <td>
+                                <button className="btn btn-sm btn-secondary" onClick={() => resetPassword(user.id, user.email)}>
+                                  Reset Password
+                                </button>
                               </td>
                             </tr>
                           ))}
