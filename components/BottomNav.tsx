@@ -8,7 +8,9 @@ const navItems = [
   { href: '/books', label: 'Books', icon: BookIcon, admin: true },
   { href: '/comments', label: 'Comments', icon: CommentIcon, admin: true },
   { href: '/users', label: 'Users', icon: UserIcon, admin: true },
+  { href: '/activity-log', label: 'Activity', icon: ActivityIcon, admin: true },
   { href: '/settings', label: 'Settings', icon: SettingsIcon, admin: true },
+  { href: '/profile', label: 'Profile', icon: ProfileIcon, admin: true },
   { href: '/admins', label: 'Admins', icon: AdminIcon, admin: true },
 ]
 
@@ -58,6 +60,23 @@ function CommentIcon() {
 }
 
 function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
+function ActivityIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  )
+}
+
+function ProfileIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />

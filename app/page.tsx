@@ -195,7 +195,7 @@ export default function DashboardPage() {
                                 <span style={{ fontWeight: 600 }}>{b.title}</span>
                                 <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 11 }}>{b.author}</span>
                               </span>
-                              <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('books').update({ is_community_favorite: false }).eq('id', b.id); loadData() }}>Remove</button>
+                              <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('books').update({ is_community_favorite: false }).eq('id', b.id); loadData(); import('@/lib/activity').then(({ logActivity }) => logActivity('remove_community', `Removed from community: ${b.title}`)) }}>Remove</button>
                             </div>
                           ))}
                         </div>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
                               <option key={b.id} value={b.id}>{b.title} — {b.author}</option>
                             ))}
                           </select>
-                          <button className="btn btn-sm btn-primary" onClick={async () => { const select = document.getElementById('add-community-book') as HTMLSelectElement | null; const id = select?.value; if (!id) return; await supabase.from('books').update({ is_community_favorite: true }).eq('id', Number(id)); loadData(); if (select) select.value = '' }}>Add</button>
+                          <button className="btn btn-sm btn-primary" onClick={async () => { const select = document.getElementById('add-community-book') as HTMLSelectElement | null; const id = select?.value; if (!id) return; const book = availableBooks.find(b => b.id === Number(id)); await supabase.from('books').update({ is_community_favorite: true }).eq('id', Number(id)); loadData(); if (select) select.value = ''; if (book) import('@/lib/activity').then(({ logActivity }) => logActivity('add_community', `Added to community: ${book.title}`)) }}>Add</button>
                         </div>
                       )}
                     </div>

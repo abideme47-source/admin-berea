@@ -36,6 +36,7 @@ export default function SettingsPage() {
     } else {
       setMessage('Saved!')
       setSettings((prev) => ({ ...prev, [key]: value }))
+      import('@/lib/activity').then(({ logActivity }) => logActivity('update_setting', `Updated setting: ${key}`))
     }
     setSaving(false)
     setTimeout(() => setMessage(''), 2000)
@@ -159,6 +160,40 @@ export default function SettingsPage() {
                         </button>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="section-card">
+                    <h2 className="section-title">Announcement Banner</h2>
+                    <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>This message will appear as a dismissible banner on the main site. Leave message empty to hide the banner.</p>
+                    <div className="form-group">
+                      <label className="label">Message</label>
+                      <textarea
+                        className="input"
+                        rows={3}
+                        value={settings['announcement_message'] || ''}
+                        onChange={(e) => setSettings((prev) => ({ ...prev, announcement_message: e.target.value }))}
+                        placeholder="e.g. New books available! Check out our latest arrivals."
+                        style={{ minHeight: 80, resize: 'vertical' }}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="label">Link URL (optional)</label>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <input
+                          className="input"
+                          value={settings['announcement_link'] || ''}
+                          onChange={(e) => setSettings((prev) => ({ ...prev, announcement_link: e.target.value }))}
+                          placeholder="https://..."
+                          style={{ flex: 1 }}
+                        />
+                        <button className="btn btn-primary" onClick={() => handleSave('announcement_link', settings['announcement_link'] || '')} disabled={saving}>
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                    <button className="btn btn-primary" onClick={() => handleSave('announcement_message', settings['announcement_message'] || '')} disabled={saving}>
+                      Save Announcement
+                    </button>
                   </div>
                 </>
               )}

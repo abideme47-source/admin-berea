@@ -50,6 +50,7 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
       supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
         setBookQuotes(data || [])
       })
+      import('@/lib/activity').then(({ logActivity }) => logActivity('add_quote', `Added quote to: ${book.title}`))
     }
   }
 
@@ -59,6 +60,7 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
       supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
         setBookQuotes(data || [])
       })
+      import('@/lib/activity').then(({ logActivity }) => logActivity('remove_quote', `Removed quote from: ${book.title}`))
     }
   }
 
@@ -124,6 +126,7 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
         setIsError(false)
         onSave()
         setTimeout(onClose, 800)
+        import('@/lib/activity').then(({ logActivity }) => logActivity('update_book', `Updated book: ${title}`))
       }
     } else {
       const { error } = await supabase.from('books').insert(bookData)
@@ -135,6 +138,7 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
         setIsError(false)
         onSave()
         setTimeout(onClose, 800)
+        import('@/lib/activity').then(({ logActivity }) => logActivity('add_book', `Added book: ${title}`))
       }
     }
 
@@ -274,6 +278,19 @@ export default function BooksPage() {
 
   const filtered = books.filter((b) => b.title.toLowerCase().includes(search.toLowerCase()) || b.author.toLowerCase().includes(search.toLowerCase()))
 
+  function exportCSV() {
+    const headers = ['Title', 'Author', 'Status', 'Year', 'Language', 'Translator', 'New Arrival', 'Community Favorite']
+    const rows = filtered.map((b) => [b.title, b.author, b.status, b.year, b.language, b.translator || '', b.is_new_arrival ? 'Yes' : 'No', b.is_community_favorite ? 'Yes' : 'No'])
+    const csv = [headers, ...rows].map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'books.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function getCommentCount(bookId: number) {
     return comments.filter((c) => c.book_id === bookId).length
   }
@@ -287,7 +304,10 @@ export default function BooksPage() {
   function handleDelete(book: Book) {
     if (!confirm(`Delete "${book.title}"?`)) return
     setRecentlyDeleted((prev) => [...prev, book])
-    supabase.from('books').delete().eq('id', book.id).then(() => loadData())
+    supabase.from('books').delete().eq('id', book.id).then(() => {
+      loadData()
+      import('@/lib/activity').then(({ logActivity }) => logActivity('delete_book', `Deleted book: ${book.title}`))
+    })
   }
 
   function handleUndoDelete(book: Book) {
@@ -301,7 +321,10 @@ export default function BooksPage() {
       language: book.language,
       description: book.description,
       is_new_arrival: book.is_new_arrival,
-    }).then(() => loadData())
+    }).then(() => {
+      loadData()
+      import('@/lib/activity').then(({ logActivity }) => logActivity('undo_delete_book', `Restored book: ${book.title}`))
+    })
   }
 
   return (
@@ -320,9 +343,14 @@ export default function BooksPage() {
                   style={{ flex: 1 }}
                 />
                 {admin?.permissions?.manage_books && (
-                  <button className="btn btn-primary" onClick={() => { setEditingBook(null); setShowModal(true) }}>
-                    + Add
-                  </button>
+                  <>
+                    <button className="btn btn-secondary" onClick={exportCSV}>
+                      Export CSV
+                    </button>
+                    <button className="btn btn-primary" onClick={() => { setEditingBook(null); setShowModal(true) }}>
+                      + Add
+                    </button>
+                  </>
                 )}
               </div>
 

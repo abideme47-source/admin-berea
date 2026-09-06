@@ -16,6 +16,7 @@ const ALL_PERMISSIONS = [
   { key: 'manage_admins', label: 'Manage Admins' },
   { key: 'manage_settings', label: 'Manage Settings' },
   { key: 'view_dashboard', label: 'View Dashboard' },
+  { key: 'change_profile_info', label: 'Change Profile Info' },
 ]
 
 const ROLES = ['owner', 'manager', 'staff'] as const
@@ -34,6 +35,7 @@ export default function AdminsPage() {
     manage_admins: true,
     manage_settings: true,
     view_dashboard: true,
+    change_profile_info: true,
   })
   const [error, setError] = useState('')
   const supabase = createClient()
@@ -77,18 +79,23 @@ export default function AdminsPage() {
       setShowAdd(false)
       setSelectedUser('')
       loadData()
+      import('@/lib/activity').then(({ logActivity }) => logActivity('add_admin', `Added admin: ${users.find((u: any) => u.id === selectedUser)?.email}`))
     }
   }
 
   async function handleRemove(id: string) {
     if (!confirm('Remove this admin?')) return
+    const admin = admins.find((a) => a.id === id)
     await supabase.from('admins').delete().eq('id', id)
     loadData()
+    if (admin) import('@/lib/activity').then(({ logActivity }) => logActivity('remove_admin', `Removed admin: ${admin.email}`))
   }
 
   async function handleUpdateRole(id: string, role: string) {
+    const admin = admins.find((a) => a.id === id)
     await supabase.from('admins').update({ role }).eq('id', id)
     loadData()
+    if (admin) import('@/lib/activity').then(({ logActivity }) => logActivity('update_admin_role', `Changed ${admin.email} role to ${role}`))
   }
 
   async function handleUpdatePermission(id: string, key: string, value: boolean) {
@@ -97,6 +104,7 @@ export default function AdminsPage() {
     const newPerms = { ...admin.permissions, [key]: value }
     await supabase.from('admins').update({ permissions: newPerms }).eq('id', id)
     loadData()
+    import('@/lib/activity').then(({ logActivity }) => logActivity('update_admin_permission', `${admin.email}: ${key} = ${value}`))
   }
 
   return (

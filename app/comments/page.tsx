@@ -35,7 +35,10 @@ export default function CommentsPage() {
 
   function handleDelete(id: number) {
     if (!confirm('Delete this comment?')) return
-    supabase.from('book_comments').delete().eq('id', id).then(() => loadData())
+    supabase.from('book_comments').delete().eq('id', id).then(() => {
+      loadData()
+      import('@/lib/activity').then(({ logActivity }) => logActivity('delete_comment', `Deleted comment #${id}`))
+    })
   }
 
   const filtered = comments.filter((c) =>
@@ -43,6 +46,19 @@ export default function CommentsPage() {
     c.author_name.toLowerCase().includes(filter.toLowerCase()) ||
     (c.book_title || '').toLowerCase().includes(filter.toLowerCase())
   )
+
+  function exportCSV() {
+    const headers = ['Author', 'Book', 'Comment', 'Date']
+    const rows = filtered.map((c) => [c.author_name, c.book_title || '', c.content, new Date(c.created_at).toLocaleString()])
+    const csv = [headers, ...rows].map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'comments.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <AdminGuard>
@@ -57,13 +73,16 @@ export default function CommentsPage() {
                 </div>
               ) : (
                 <>
-                  <div className="form-group">
-                    <input
-                      className="input"
-                      placeholder="Search comments..."
-                      value={filter}
-                      onChange={(e) => setFilter(e.target.value)}
-                    />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div className="form-group" style={{ flex: 1, marginRight: 10, marginBottom: 0 }}>
+                      <input
+                        className="input"
+                        placeholder="Search comments..."
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                      />
+                    </div>
+                    <button className="btn btn-secondary" onClick={exportCSV}>Export CSV</button>
                   </div>
 
                   {loading ? (
