@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,6 +10,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const client = createClient()
+    client.auth.getUser().then(async ({ data }: { data: { user: { id: string } | null } }) => {
+      if (data.user) {
+        const { data: adminRecord } = await client
+          .from('admins')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .maybeSingle()
+        if (adminRecord) {
+          router.push('/')
+          router.refresh()
+        } else {
+          await client.auth.signOut()
+        }
+      }
+    })
+  }, [router])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -21,6 +40,27 @@ export default function LoginPage() {
 
     if (error) {
       setError('Invalid email or password.')
+      setLoading(false)
+      return
+    }
+
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData.user?.id
+    if (!userId) {
+      setError('Login failed.')
+      setLoading(false)
+      return
+    }
+
+    const { data: adminRecord } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (!adminRecord) {
+      await supabase.auth.signOut()
+      setError('This account does not have admin access.')
       setLoading(false)
       return
     }
