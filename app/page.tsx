@@ -53,7 +53,9 @@ export default function DashboardPage() {
 
   async function loadData() {
     setLoading(true)
-    const [{ data: booksData }, { count: booksCount }, { data: commentsData }, { data: likesData }, { data: usersData }, { data: settingsData }, { count: ordersCount }, { data: quotesData }] = await Promise.all([
+    const usersRes = await fetch('/api/users', { cache: 'no-store' })
+    const usersJson = usersRes.ok ? await usersRes.json() : { users: [] }
+    const [{ data: booksData }, { count: booksCount }, { data: commentsData }, { data: likesData }, { data: settingsData }, { count: ordersCount }, { data: quotesData }] = await Promise.all([
       supabase.from('books').select('*'),
       supabase.from('books').select('*', { count: 'exact', head: true }),
       supabase.from('book_comments').select('*').order('created_at', { ascending: false }).limit(5),
@@ -62,7 +64,6 @@ export default function DashboardPage() {
         ;(data || []).forEach((l: any) => { map.set(l.book_title, (map.get(l.book_title) || 0) + 1) })
         return { data: Array.from(map.entries()).map(([book_title, count]) => ({ book_title, count })) }
       }),
-      supabase.auth.admin.listUsers(),
       supabase.from('site_settings').select('*'),
       supabase.from('orders').select('*', { count: 'exact', head: true }),
       supabase.from('quotes').select('*, book:book_id(id, title, author)'),
@@ -77,7 +78,8 @@ export default function DashboardPage() {
     setComments(commentsWithBook)
     setLikes(likesData || [])
     setRecentComments((commentsData || []).slice(0, 5))
-    setRecentUsers((usersData?.users || []).slice(0, 5))
+    setUsers(usersJson.users || [])
+    setRecentUsers((usersJson.users || []).slice(0, 5))
     setRecentBooks((booksData || []).slice(0, 5))
     setTotalOrders(ordersCount || 0)
     const enrichedQuotes = (quotesData || []).map((q: any) => ({
