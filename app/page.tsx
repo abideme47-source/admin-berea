@@ -165,13 +165,36 @@ export default function DashboardPage() {
                 <h2 className="section-title">Community Recommendations</h2>
                 {(() => {
                   const communityBooks = books.filter((b) => b.is_community_favorite)
-                  if (communityBooks.length === 0) return <p style={{ fontSize: 13, color: 'var(--muted)' }}>No books marked for community recommendations</p>
-                  return communityBooks.map((b) => (
-                    <div key={b.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
-                      <span style={{ fontWeight: 600 }}>{b.title}</span>
-                      <span style={{ color: 'var(--muted)', marginLeft: 8, fontSize: 11 }}>{b.author}</span>
+                  const availableBooks = books.filter((b) => !b.is_community_favorite)
+                  if (books.length === 0) return <p style={{ fontSize: 13, color: 'var(--muted)' }}>No books yet</p>
+                  return (
+                    <div>
+                      {communityBooks.length > 0 && (
+                        <div style={{ marginBottom: 12 }}>
+                          {communityBooks.map((b) => (
+                            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+                              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: 600 }}>{b.title}</span>
+                                <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 11 }}>{b.author}</span>
+                              </span>
+                              <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('books').update({ is_community_favorite: false }).eq('id', b.id); loadData() }}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {availableBooks.length > 0 && (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <select id="add-community-book" className="input" defaultValue="" style={{ flex: 1, minHeight: 40 }}>
+                            <option value="">Add a book...</option>
+                            {availableBooks.map((b) => (
+                              <option key={b.id} value={b.id}>{b.title} — {b.author}</option>
+                            ))}
+                          </select>
+                          <button className="btn btn-sm btn-primary" onClick={async () => { const select = document.getElementById('add-community-book') as HTMLSelectElement | null; const id = select?.value; if (!id) return; await supabase.from('books').update({ is_community_favorite: true }).eq('id', Number(id)); loadData(); if (select) select.value = '' }}>Add</button>
+                        </div>
+                      )}
                     </div>
-                  ))
+                  )
                 })()}
               </div>
 
@@ -183,7 +206,11 @@ export default function DashboardPage() {
                   return quoted.map((b) => (
                     <div key={b.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
                       <p style={{ margin: '0 0 4px', fontSize: 13, fontStyle: 'italic', color: 'var(--foreground)' }}>"{b.quote}"</p>
-                      <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>{b.title} · {b.author}{b.translator ? ' · transl. ' + b.translator : ''}</p>
+                      <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--muted)' }}>{b.title} · {b.author}{b.translator ? ' · transl. ' + b.translator : ''}</p>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn btn-sm btn-secondary" onClick={() => { const newQuote = prompt('Edit quote:', b.quote || ''); if (newQuote !== null) { supabase.from('books').update({ quote: newQuote }).eq('id', b.id).then(() => loadData()) } }}>Edit Quote</button>
+                        <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('books').update({ quote: '' }).eq('id', b.id); loadData() }}>Remove Quote</button>
+                      </div>
                     </div>
                   ))
                 })()}
