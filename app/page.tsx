@@ -13,6 +13,7 @@ type Comment = { id: number; book_id: number; author_name: string; content: stri
 type Like = { book_title: string; count: number }
 type Setting = { key: string; value: string }
 type Quote = { id: string; book_id: number; quote: string; book_title?: string; book_author?: string }
+type Announcement = { id: string; message: string; link_url?: string; is_active: boolean; created_at: string }
 
 function TrendingBook({ title, count, label }: { title: string; count: number; label: string }) {
   return (
@@ -38,6 +39,10 @@ export default function DashboardPage() {
   const [recentUsers, setRecentUsers] = useState<any[]>([])
   const [recentBooks, setRecentBooks] = useState<Book[]>([])
   const [quotes, setQuotes] = useState<Quote[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [announcementMessage, setAnnouncementMessage] = useState('')
+  const [announcementLink, setAnnouncementLink] = useState('')
+  const [announcementActive, setAnnouncementActive] = useState(true)
   const [totalBooks, setTotalBooks] = useState(0)
   const [totalOrders, setTotalOrders] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -76,6 +81,13 @@ export default function DashboardPage() {
       book_author: q.book?.author || 'Unknown',
     }))
     setQuotes(enrichedQuotes)
+    
+    const announcementsRes = await fetch('/api/announcements')
+    if (announcementsRes.ok) {
+      const announcementsData = await announcementsRes.json()
+      setAnnouncements(announcementsData.announcements || [])
+    }
+    
     const settingsMap: Record<string, string> = {}
     ;(settingsData || []).forEach((s: Setting) => { settingsMap[s.key] = s.value || '' })
     setSettings(settingsMap)
@@ -235,6 +247,66 @@ export default function DashboardPage() {
                     </div>
                   )
                 })()}
+              </div>
+
+              <div className="section-card">
+                <h2 className="section-title">Announcement Banner</h2>
+                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Create an announcement to show as a dismissible banner on the main site. Only one active announcement is shown at a time.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    value={announcementMessage}
+                    onChange={(e) => setAnnouncementMessage(e.target.value)}
+                    placeholder="Announcement message..."
+                    style={{ minHeight: 80, resize: 'vertical' }}
+                  />
+                  <input
+                    className="input"
+                    value={announcementLink}
+                    onChange={(e) => setAnnouncementLink(e.target.value)}
+                    placeholder="Link URL (optional)"
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      id="announcement-active"
+                      type="checkbox"
+                      checked={announcementActive}
+                      onChange={(e) => setAnnouncementActive(e.target.checked)}
+                    />
+                    <label htmlFor="announcement-active" style={{ fontSize: 13 }}>Active</label>
+                    <div style={{ flex: 1 }} />
+                    <button className="btn btn-primary" onClick={async () => {
+                      if (!announcementMessage.trim()) return
+                      const res = await fetch('/api/announcements', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: announcementMessage.trim(), link_url: announcementLink.trim() || null, is_active: announcementActive }),
+                      })
+                      if (res.ok) {
+                        setAnnouncementMessage('')
+                        setAnnouncementLink('')
+                        setAnnouncementActive(true)
+                        loadData()
+                      }
+                    }}>Publish Announcement</button>
+                  </div>
+                </div>
+                {announcements.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 8 }}>Recent Announcements</p>
+                    {announcements.slice(0, 5).map((a) => (
+                      <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+                        <span style={{ flex: 1, minWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: 600 }}>{a.message}</span>
+                          {a.link_url && <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 11 }}>{a.link_url}</span>}
+                        </span>
+                        <span style={{ fontSize: 11, color: 'var(--muted)' }}>{new Date(a.created_at).toLocaleDateString()}</span>
+                        <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('announcements').delete().eq('id', a.id); loadData() }}>Delete</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
