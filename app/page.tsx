@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [announcementMessage, setAnnouncementMessage] = useState('')
   const [announcementLink, setAnnouncementLink] = useState('')
   const [announcementActive, setAnnouncementActive] = useState(true)
+  const [announcementSaved, setAnnouncementSaved] = useState('')
   const [totalBooks, setTotalBooks] = useState(0)
   const [totalOrders, setTotalOrders] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -69,7 +70,11 @@ export default function DashboardPage() {
 
     setBooks(booksData || [])
     setTotalBooks(booksCount || 0)
-    setComments(commentsData || [])
+    const commentsWithBook = (commentsData || []).map((c: any) => ({
+      ...c,
+      book_title: (booksData || []).find((b: any) => b.id === c.book_id)?.title || 'Unknown',
+    }))
+    setComments(commentsWithBook)
     setLikes(likesData || [])
     setRecentComments((commentsData || []).slice(0, 5))
     setRecentUsers((usersData?.users || []).slice(0, 5))
@@ -86,6 +91,12 @@ export default function DashboardPage() {
     if (announcementsRes.ok) {
       const announcementsData = await announcementsRes.json()
       setAnnouncements(announcementsData.announcements || [])
+      const activeAnnouncement = (announcementsData.announcements || []).find((a: Announcement) => a.is_active)
+      if (activeAnnouncement) {
+        setAnnouncementMessage(activeAnnouncement.message)
+        setAnnouncementLink(activeAnnouncement.link_url || '')
+        setAnnouncementActive(activeAnnouncement.is_active)
+      }
     }
     
     const settingsMap: Record<string, string> = {}
@@ -251,7 +262,12 @@ export default function DashboardPage() {
 
               <div className="section-card">
                 <h2 className="section-title">Announcement Banner</h2>
-                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Create an announcement to show as a dismissible banner on the main site. Only one active announcement is shown at a time.</p>
+                <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Create an announcement to show as a banner on the main site. Only one active announcement is shown at a time.</p>
+                {announcementSaved && (
+                  <div style={{ padding: 10, borderRadius: 8, background: '#dcfce7', color: '#16a34a', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+                    {announcementSaved}
+                  </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <textarea
                     className="input"
@@ -284,9 +300,8 @@ export default function DashboardPage() {
                         body: JSON.stringify({ message: announcementMessage.trim(), link_url: announcementLink.trim() || null, is_active: announcementActive }),
                       })
                       if (res.ok) {
-                        setAnnouncementMessage('')
-                        setAnnouncementLink('')
-                        setAnnouncementActive(true)
+                        setAnnouncementSaved('Announcement published!')
+                        setTimeout(() => setAnnouncementSaved(''), 3000)
                         loadData()
                       }
                     }}>Publish Announcement</button>

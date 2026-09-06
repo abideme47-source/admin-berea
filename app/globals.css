@@ -212,6 +212,7 @@ button, input, select, textarea {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  min-width: 640px;
 }
 
 .table th,
