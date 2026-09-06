@@ -7,7 +7,7 @@ import BottomNav from '@/components/BottomNav'
 import AdminHeader from '@/components/AdminHeader'
 import { AdminContext } from '@/components/AdminGuard'
 
-type Book = { id: number; title: string; author: string; status: string; cover: string }
+type Book = { id: number; title: string; author: string; status: string; cover: string; created_at?: string }
 type Comment = { id: number; book_id: number; author_name: string; content: string; created_at: string; book_title?: string }
 type Like = { book_title: string; count: number }
 type Setting = { key: string; value: string }
@@ -34,13 +34,14 @@ export default function DashboardPage() {
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [recentComments, setRecentComments] = useState<Comment[]>([])
   const [recentUsers, setRecentUsers] = useState<any[]>([])
+  const [recentBooks, setRecentBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   async function loadData() {
     setLoading(true)
     const [{ data: booksData }, { data: commentsData }, { data: likesData }, { data: usersData }, { data: settingsData }] = await Promise.all([
-      supabase.from('books').select('*'),
+      supabase.from('books').select('*').order('created_at', { ascending: false }).limit(5),
       supabase.from('book_comments').select('*').order('created_at', { ascending: false }).limit(5),
       supabase.from('likes').select('book_title').then(({ data }: { data: { book_title: string }[] | null }) => {
         const map = new Map<string, number>()
@@ -56,6 +57,7 @@ export default function DashboardPage() {
     setLikes(likesData || [])
     setRecentComments((commentsData || []).slice(0, 5))
     setRecentUsers((usersData?.users || []).slice(0, 5))
+    setRecentBooks((booksData || []).slice(0, 5))
     const settingsMap: Record<string, string> = {}
     ;(settingsData || []).forEach((s: Setting) => { settingsMap[s.key] = s.value || '' })
     setSettings(settingsMap)
@@ -137,6 +139,22 @@ export default function DashboardPage() {
                       <span style={{ fontWeight: 600 }}>{u.email}</span>
                       <span style={{ color: 'var(--muted)', marginLeft: 8, fontSize: 11 }}>
                         {u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="section-card">
+                <h2 className="section-title">Recent Books Added</h2>
+                {recentBooks.length === 0 ? (
+                  <p style={{ fontSize: 13, color: 'var(--muted)' }}>No books yet</p>
+                ) : (
+                  recentBooks.map((book) => (
+                    <div key={book.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+                      <span style={{ fontWeight: 600 }}>{book.title}</span>
+                      <span style={{ color: 'var(--muted)', marginLeft: 8, fontSize: 11 }}>
+                        {book.created_at ? new Date(book.created_at).toLocaleDateString() : ''}
                       </span>
                     </div>
                   ))

@@ -126,6 +126,7 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
           <div className="form-group">
             <label className="label">Status</label>
             <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">None</option>
               <option value="NEW">New</option>
               <option value="LIMITED">Limited</option>
               <option value="FINISHED">Finished</option>
@@ -206,9 +207,26 @@ export default function BooksPage() {
     return likes.find((l) => l.book_title === title)?.count || 0
   }
 
+  const [recentlyDeleted, setRecentlyDeleted] = useState<Book[]>([])
+
   function handleDelete(book: Book) {
-    if (!confirm(`Delete "${book.title}"? This cannot be undone.`)) return
+    if (!confirm(`Delete "${book.title}"?`)) return
+    setRecentlyDeleted((prev) => [...prev, book])
     supabase.from('books').delete().eq('id', book.id).then(() => loadData())
+  }
+
+  function handleUndoDelete(book: Book) {
+    setRecentlyDeleted((prev) => prev.filter((b) => b.id !== book.id))
+    supabase.from('books').insert({
+      title: book.title,
+      author: book.author,
+      status: book.status,
+      cover: book.cover,
+      year: book.year,
+      language: book.language,
+      description: book.description,
+      is_new_arrival: book.is_new_arrival,
+    }).then(() => loadData())
   }
 
   return (
@@ -240,7 +258,22 @@ export default function BooksPage() {
                   <p>No books found</p>
                 </div>
               ) : (
-                <div className="section-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <>
+                  {recentlyDeleted.length > 0 && (
+                    <div style={{ padding: '0 0 12px' }}>
+                      {recentlyDeleted.map((book) => (
+                        <div key={book.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+                          <span style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            Deleted: <strong>{book.title}</strong>
+                          </span>
+                          <button className="btn btn-sm btn-secondary" onClick={() => handleUndoDelete(book)}>
+                            Undo
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="section-card" style={{ padding: 0, overflow: 'hidden' }}>
                   <div className="table-wrap">
                     <table className="table">
                       <thead>
@@ -280,7 +313,8 @@ export default function BooksPage() {
                       </tbody>
                     </table>
                   </div>
-                </div>
+                  </div>
+                </>
               )}
             </main>
 
