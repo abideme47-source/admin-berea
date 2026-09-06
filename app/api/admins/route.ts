@@ -7,7 +7,7 @@ export async function GET() {
     
     const { data: adminsData } = await supabase
       .from('admins')
-      .select('user_id, role, permissions, created_at')
+      .select('id, user_id, role, permissions, created_at')
 
     const { data: usersData } = await supabase.auth.admin.listUsers()
     
