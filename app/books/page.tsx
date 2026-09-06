@@ -68,18 +68,18 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
       coverUrl = data.publicUrl
     }
 
-    const bookData = {
+    const bookData: any = {
       title,
       author,
       status,
       year,
       language,
-      translator,
       description,
       cover: coverUrl,
       is_new_arrival: isNewArrival,
       is_community_favorite: isCommunityFavorite,
     }
+    if (translator.trim()) bookData.translator = translator.trim()
 
     if (book) {
       const { error } = await supabase.from('books').update(bookData).eq('id', book.id)
