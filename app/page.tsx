@@ -77,10 +77,10 @@ export default function DashboardPage() {
     }))
     setComments(commentsWithBook)
     setLikes(likesData || [])
-    setRecentComments((commentsData || []).slice(0, 5))
+    setRecentComments((commentsData || []).slice(0, 3))
     setUsers(usersJson.users || [])
-    setRecentUsers((usersJson.users || []).slice(0, 5))
-    setRecentBooks((booksData || []).slice(0, 5))
+    setRecentUsers((usersJson.users || []).slice(0, 3))
+    setRecentBooks((booksData || []).slice(0, 3))
     setTotalOrders(ordersCount || 0)
     const enrichedQuotes = (quotesData || []).map((q: any) => ({
       ...q,
@@ -109,11 +109,11 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData() }, [])
 
-  const topLiked = [...likes].sort((a, b) => b.count - a.count).slice(0, 5)
+  const topLiked = [...likes].sort((a, b) => b.count - a.count).slice(0, 3)
   const topCommented = (() => {
     const map = new Map<string, number>()
     comments.forEach((c) => { map.set(c.book_title || 'Unknown', (map.get(c.book_title || 'Unknown') || 0) + 1) })
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([book_title, count]) => ({ book_title, count }))
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([book_title, count]) => ({ book_title, count }))
   })()
 
   return (
