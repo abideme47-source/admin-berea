@@ -39,7 +39,15 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
         id: adminRecord.id,
         email: data.user.email || '',
         role: adminRecord.role,
-        permissions: adminRecord.permissions || {},
+        permissions: adminRecord.role === 'owner' ? {
+          manage_books: true,
+          manage_comments: true,
+          manage_users: true,
+          manage_admins: true,
+          manage_settings: true,
+          view_dashboard: true,
+          change_profile_info: true,
+        } : (adminRecord.permissions || {}),
       })
       setLoading(false)
     })
