@@ -6,11 +6,9 @@ import { usePathname } from 'next/navigation'
 const navItems = [
   { href: '/', label: 'Home', icon: HomeIcon, admin: false },
   { href: '/books', label: 'Books', icon: BookIcon, admin: true },
-  { href: '/comments', label: 'Comments', icon: CommentIcon, admin: true },
   { href: '/users', label: 'Users', icon: UserIcon, admin: true },
   { href: '/activity-log', label: 'Activity', icon: ActivityIcon, admin: true },
   { href: '/settings', label: 'Settings', icon: SettingsIcon, admin: true },
-  { href: '/profile', label: 'Profile', icon: ProfileIcon, admin: true },
   { href: '/admins', label: 'Admins', icon: AdminIcon, admin: true },
 ]
 
