@@ -66,6 +66,21 @@ export default function UsersPage() {
     }
   }
 
+  async function deleteUser(userId: string, userEmail: string) {
+    if (!confirm(`Delete user ${userEmail}? This action cannot be undone.`)) return
+    const res = await fetch('/api/users/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    if (res.ok) {
+      setUsers((prev) => prev.filter((u) => u.id !== userId))
+    } else {
+      const data = await res.json()
+      alert('Error: ' + data.error)
+    }
+  }
+
   return (
     <AdminGuard>
       <AdminContext.Consumer>
@@ -133,10 +148,15 @@ export default function UsersPage() {
                               <td style={{ color: 'var(--muted)', fontSize: 12 }}>
                                 {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
                               </td>
-                              <td>
+                              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                 <button className="btn btn-sm btn-secondary" onClick={() => resetPassword(user.id, user.email)}>
                                   Reset Password
                                 </button>
+                                {user.id !== admin.id && (
+                                  <button className="btn btn-sm btn-danger" onClick={() => deleteUser(user.id, user.email)}>
+                                    Remove
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))}

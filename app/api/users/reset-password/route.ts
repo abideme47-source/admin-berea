@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     
     const { error } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: email,
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/login`,
