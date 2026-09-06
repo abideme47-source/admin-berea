@@ -63,16 +63,32 @@ export default function SettingsPage() {
                   <div className="section-card">
                     <h2 className="section-title">Contact & Social</h2>
                     <div className="form-group">
-                      <label className="label">Telegram Username (for orders)</label>
+                      <label className="label">Order Telegram URL</label>
                       <div style={{ display: 'flex', gap: 10 }}>
                         <input
                           className="input"
-                          value={settings['telegram_username'] || ''}
-                          onChange={(e) => setSettings((prev) => ({ ...prev, telegram_username: e.target.value }))}
-                          placeholder="e.g. mariti776"
+                          value={settings['telegram_order_url'] || ''}
+                          onChange={(e) => setSettings((prev) => ({ ...prev, telegram_order_url: e.target.value }))}
+                          placeholder="https://t.me/mariti776"
                           style={{ flex: 1 }}
                         />
-                        <button className="btn btn-primary" onClick={() => handleSave('telegram_username', settings['telegram_username'] || '')} disabled={saving}>
+                        <button className="btn btn-primary" onClick={() => handleSave('telegram_order_url', settings['telegram_order_url'] || '')} disabled={saving}>
+                          Save
+                        </button>
+                      </div>
+                      <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>Full Telegram URL where order messages will be sent.</p>
+                    </div>
+                    <div className="form-group">
+                      <label className="label">Telegram Channel URL</label>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <input
+                          className="input"
+                          value={settings['telegram_channel_url'] || ''}
+                          onChange={(e) => setSettings((prev) => ({ ...prev, telegram_channel_url: e.target.value }))}
+                          placeholder="https://t.me/bereabookstore"
+                          style={{ flex: 1 }}
+                        />
+                        <button className="btn btn-primary" onClick={() => handleSave('telegram_channel_url', settings['telegram_channel_url'] || '')} disabled={saving}>
                           Save
                         </button>
                       </div>
@@ -84,25 +100,10 @@ export default function SettingsPage() {
                           className="input"
                           value={settings['instagram_url'] || ''}
                           onChange={(e) => setSettings((prev) => ({ ...prev, instagram_url: e.target.value }))}
-                          placeholder="https://instagram.com/..."
+                          placeholder="https://www.instagram.com/..."
                           style={{ flex: 1 }}
                         />
                         <button className="btn btn-primary" onClick={() => handleSave('instagram_url', settings['instagram_url'] || '')} disabled={saving}>
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label className="label">Telegram Channel URL</label>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <input
-                          className="input"
-                          value={settings['telegram_channel_url'] || ''}
-                          onChange={(e) => setSettings((prev) => ({ ...prev, telegram_channel_url: e.target.value }))}
-                          placeholder="https://t.me/..."
-                          style={{ flex: 1 }}
-                        />
-                        <button className="btn btn-primary" onClick={() => handleSave('telegram_channel_url', settings['telegram_channel_url'] || '')} disabled={saving}>
                           Save
                         </button>
                       </div>
