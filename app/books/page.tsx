@@ -8,7 +8,7 @@ import AdminHeader from '@/components/AdminHeader'
 import { AdminContext } from '@/components/AdminGuard'
 import { use } from 'react'
 
-type Book = { id: number; title: string; author: string; status: string; cover: string; year: string; language: string; description: string; is_new_arrival: boolean }
+type Book = { id: number; title: string; author: string; status: string; cover: string; year: string; language: string; description: string; is_new_arrival: boolean; translator?: string; quote?: string }
 type Comment = { id: number; book_id: number; author_name: string; content: string; created_at: string }
 type Like = { book_title: string; count: number }
 
@@ -18,7 +18,9 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
   const [status, setStatus] = useState(book?.status || 'NEW')
   const [year, setYear] = useState(book?.year || '')
   const [language, setLanguage] = useState(book?.language || '')
+  const [translator, setTranslator] = useState(book?.translator || '')
   const [description, setDescription] = useState(book?.description || '')
+  const [quote, setQuote] = useState(book?.quote || '')
   const [isNewArrival, setIsNewArrival] = useState(book?.is_new_arrival || false)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState(book?.cover || '')
@@ -32,7 +34,21 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
     setSaving(true)
     setMessage('')
 
+    if (!title.trim() || !author.trim() || !language.trim()) {
+      setMessage('Title, Author, and Language are required.')
+      setIsError(true)
+      setSaving(false)
+      return
+    }
+
     let coverUrl = book?.cover || ''
+
+    if (!book && !coverFile) {
+      setMessage('Please upload a book cover image.')
+      setIsError(true)
+      setSaving(false)
+      return
+    }
 
     if (coverFile) {
       const ext = coverFile.name.split('.').pop()
@@ -58,7 +74,9 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
       status,
       year,
       language,
+      translator,
       description,
+      quote,
       cover: coverUrl,
       is_new_arrival: isNewArrival,
     }
@@ -117,11 +135,15 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="label">Title *</label>
-            <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
+            <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter book title" />
           </div>
           <div className="form-group">
             <label className="label">Author *</label>
-            <input className="input" required value={author} onChange={(e) => setAuthor(e.target.value)} />
+            <input className="input" required value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Original author name" />
+          </div>
+          <div className="form-group">
+            <label className="label">Translator</label>
+            <input className="input" value={translator} onChange={(e) => setTranslator(e.target.value)} placeholder="Translator name (if translated)" />
           </div>
           <div className="form-group">
             <label className="label">Status</label>
@@ -134,19 +156,23 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
           </div>
           <div className="form-group">
             <label className="label">Year</label>
-            <input className="input" value={year} onChange={(e) => setYear(e.target.value)} />
+            <input className="input" value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2024" />
           </div>
           <div className="form-group">
-            <label className="label">Language</label>
-            <input className="input" value={language} onChange={(e) => setLanguage(e.target.value)} />
+            <label className="label">Language *</label>
+            <input className="input" required value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="e.g. Amharic, English" />
           </div>
           <div className="form-group">
             <label className="label">Description</label>
-            <textarea className="input" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} style={{ minHeight: 80, resize: 'vertical' }} />
+            <textarea className="input" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} style={{ minHeight: 80, resize: 'vertical' }} placeholder="Brief description of the book" />
           </div>
           <div className="form-group">
-            <label className="label">Book Cover</label>
-            <input type="file" accept="image/*" className="input" onChange={handleFileChange} style={{ padding: 8 }} />
+            <label className="label">Quote from the book</label>
+            <textarea className="input" rows={2} value={quote} onChange={(e) => setQuote(e.target.value)} style={{ minHeight: 60, resize: 'vertical' }} placeholder="A memorable quote from this book (will show in hero section)" />
+          </div>
+          <div className="form-group">
+            <label className="label">Book Cover {!book ? '*' : ''}</label>
+            <input type="file" accept="image/*" className="input" onChange={handleFileChange} required={!book} style={{ padding: 8 }} />
             {coverPreview && (
               <img src={coverPreview} alt="Preview" style={{ width: 80, height: 120, objectFit: 'cover', borderRadius: 8, marginTop: 8, border: '1px solid var(--line)' }} />
             )}

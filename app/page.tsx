@@ -7,7 +7,7 @@ import BottomNav from '@/components/BottomNav'
 import AdminHeader from '@/components/AdminHeader'
 import { AdminContext } from '@/components/AdminGuard'
 
-type Book = { id: number; title: string; author: string; status: string; cover: string; created_at?: string }
+type Book = { id: number; title: string; author: string; status: string; cover: string; created_at?: string; year?: string; language?: string; translator?: string; quote?: string; description?: string; is_new_arrival?: boolean }
 type Comment = { id: number; book_id: number; author_name: string; content: string; created_at: string; book_title?: string }
 type Like = { book_title: string; count: number }
 type Setting = { key: string; value: string }
@@ -159,6 +159,20 @@ export default function DashboardPage() {
                     </div>
                   ))
                 )}
+              </div>
+
+              <div className="section-card">
+                <h2 className="section-title">Active Book Quotes</h2>
+                {(() => {
+                  const quoted = books.filter((b) => b.quote && b.quote.trim().length > 0)
+                  if (quoted.length === 0) return <p style={{ fontSize: 13, color: 'var(--muted)' }}>No quotes added yet</p>
+                  return quoted.map((b) => (
+                    <div key={b.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+                      <p style={{ margin: '0 0 4px', fontSize: 13, fontStyle: 'italic', color: 'var(--foreground)' }}>"{b.quote}"</p>
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)' }}>{b.title} · {b.author}{b.translator ? ' · transl. ' + b.translator : ''}</p>
+                    </div>
+                  ))
+                })()}
               </div>
             </>
           )}
