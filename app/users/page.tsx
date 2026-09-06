@@ -90,7 +90,7 @@ export default function UsersPage() {
                       <p>No users found</p>
                     </div>
                   ) : (
-                    <div className="section-card" style={{ padding: 0, overflow: 'hidden' }}>
+                    <div className="section-card" style={{ padding: 0, overflowX: 'auto' }}>
                       <div className="table-wrap">
                       <table className="table">
                         <thead>
