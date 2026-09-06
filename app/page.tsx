@@ -35,13 +35,16 @@ export default function DashboardPage() {
   const [recentComments, setRecentComments] = useState<Comment[]>([])
   const [recentUsers, setRecentUsers] = useState<any[]>([])
   const [recentBooks, setRecentBooks] = useState<Book[]>([])
+  const [totalBooks, setTotalBooks] = useState(0)
+  const [totalOrders, setTotalOrders] = useState(0)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   async function loadData() {
     setLoading(true)
-    const [{ data: booksData }, { data: commentsData }, { data: likesData }, { data: usersData }, { data: settingsData }] = await Promise.all([
-      supabase.from('books').select('*').order('created_at', { ascending: false }).limit(5),
+    const [{ data: booksData }, { count: booksCount }, { data: commentsData }, { data: likesData }, { data: usersData }, { data: settingsData }, { count: ordersCount }] = await Promise.all([
+      supabase.from('books').select('*'),
+      supabase.from('books').select('*', { count: 'exact', head: true }),
       supabase.from('book_comments').select('*').order('created_at', { ascending: false }).limit(5),
       supabase.from('likes').select('book_title').then(({ data }: { data: { book_title: string }[] | null }) => {
         const map = new Map<string, number>()
@@ -50,14 +53,17 @@ export default function DashboardPage() {
       }),
       supabase.auth.admin.listUsers(),
       supabase.from('site_settings').select('*'),
+      supabase.from('orders').select('*', { count: 'exact', head: true }),
     ])
 
     setBooks(booksData || [])
+    setTotalBooks(booksCount || 0)
     setComments(commentsData || [])
     setLikes(likesData || [])
     setRecentComments((commentsData || []).slice(0, 5))
     setRecentUsers((usersData?.users || []).slice(0, 5))
     setRecentBooks((booksData || []).slice(0, 5))
+    setTotalOrders(ordersCount || 0)
     const settingsMap: Record<string, string> = {}
     ;(settingsData || []).forEach((s: Setting) => { settingsMap[s.key] = s.value || '' })
     setSettings(settingsMap)
@@ -84,20 +90,20 @@ export default function DashboardPage() {
             <>
               <div className="stat-grid" style={{ marginBottom: 20 }}>
                 <div className="stat-card">
-                  <div className="stat-value">{books.length}</div>
+                  <div className="stat-value">{totalBooks}</div>
                   <div className="stat-label">Books</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-value">{comments.length}</div>
-                  <div className="stat-label">Comments</div>
+                  <div className="stat-value">{users.length}</div>
+                  <div className="stat-label">Members</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-value">{totalOrders}</div>
+                  <div className="stat-label">Orders</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-value">{likes.reduce((a, l) => a + l.count, 0)}</div>
                   <div className="stat-label">Likes</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">{users.length}</div>
-                  <div className="stat-label">Users</div>
                 </div>
               </div>
 
@@ -202,17 +208,37 @@ export default function DashboardPage() {
                 <h2 className="section-title">Active Book Quotes</h2>
                 {(() => {
                   const quoted = books.filter((b) => b.quote && b.quote.trim().length > 0)
-                  if (quoted.length === 0) return <p style={{ fontSize: 13, color: 'var(--muted)' }}>No quotes added yet</p>
-                  return quoted.map((b) => (
-                    <div key={b.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
-                      <p style={{ margin: '0 0 4px', fontSize: 13, fontStyle: 'italic', color: 'var(--foreground)' }}>"{b.quote}"</p>
-                      <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--muted)' }}>{b.title} · {b.author}{b.translator ? ' · transl. ' + b.translator : ''}</p>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-sm btn-secondary" onClick={() => { const newQuote = prompt('Edit quote:', b.quote || ''); if (newQuote !== null) { supabase.from('books').update({ quote: newQuote }).eq('id', b.id).then(() => loadData()) } }}>Edit Quote</button>
-                        <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('books').update({ quote: '' }).eq('id', b.id); loadData() }}>Remove Quote</button>
-                      </div>
+                  const availableBooks = books.filter((b) => !b.quote || b.quote.trim().length === 0)
+                  if (books.length === 0) return <p style={{ fontSize: 13, color: 'var(--muted)' }}>No books yet</p>
+                  return (
+                    <div>
+                      {quoted.length > 0 && (
+                        <div style={{ marginBottom: 12 }}>
+                          {quoted.map((b) => (
+                            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13, flexWrap: 'wrap' }}>
+                              <span style={{ flex: 1, minWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: 600 }}>{b.title}</span>
+                                <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 11 }}>"{b.quote}"</span>
+                              </span>
+                              <button className="btn btn-sm btn-secondary" onClick={() => { const newQuote = prompt('Edit quote:', b.quote || ''); if (newQuote !== null) { supabase.from('books').update({ quote: newQuote }).eq('id', b.id).then(() => loadData()) } }}>Edit</button>
+                              <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('books').update({ quote: '' }).eq('id', b.id); loadData() }}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {availableBooks.length > 0 && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <select id="add-quote-book" className="input" defaultValue="" style={{ flex: 1, minWidth: 200, minHeight: 40 }}>
+                            <option value="">Add quote to a book...</option>
+                            {availableBooks.map((b) => (
+                              <option key={b.id} value={b.id}>{b.title} — {b.author}</option>
+                            ))}
+                          </select>
+                          <button className="btn btn-sm btn-primary" onClick={async () => { const select = document.getElementById('add-quote-book') as HTMLSelectElement | null; const id = select?.value; if (!id) return; const quote = prompt('Enter quote for this book:'); if (!quote) return; await supabase.from('books').update({ quote }).eq('id', Number(id)); loadData(); if (select) select.value = '' }}>Add Quote</button>
+                        </div>
+                      )}
                     </div>
-                  ))
+                  )
                 })()}
               </div>
             </>
