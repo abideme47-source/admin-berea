@@ -30,9 +30,9 @@ export default function AdminsPage() {
   const [selectedPermissions, setSelectedPermissions] = useState<Record<string, boolean>>({
     manage_books: true,
     manage_comments: true,
-    manage_users: false,
-    manage_admins: false,
-    manage_settings: false,
+    manage_users: true,
+    manage_admins: true,
+    manage_settings: true,
     view_dashboard: true,
   })
   const [error, setError] = useState('')
@@ -47,6 +47,11 @@ export default function AdminsPage() {
     const adminsWithEmail = (adminsData || []).map((a: AdminRecord) => {
       const user = (usersData?.users || []).find((u: any) => u.id === a.user_id)
       return { ...a, email: user?.email || 'Unknown' }
+    })
+    adminsWithEmail.sort((a: AdminRecord, b: AdminRecord) => {
+      if (a.role === 'owner' && b.role !== 'owner') return -1
+      if (b.role === 'owner' && a.role !== 'owner') return 1
+      return 0
     })
     setAdmins(adminsWithEmail)
     setUsers((usersData?.users || []).filter((u: any) => u.email))

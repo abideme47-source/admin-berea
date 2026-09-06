@@ -8,7 +8,7 @@ import AdminHeader from '@/components/AdminHeader'
 import { AdminContext } from '@/components/AdminGuard'
 import { use } from 'react'
 
-type Book = { id: number; title: string; author: string; status: string; cover: string; year: string; language: string; description: string; is_new_arrival: boolean; translator?: string; quote?: string }
+type Book = { id: number; title: string; author: string; status: string; cover: string; year: string; language: string; description: string; is_new_arrival: boolean; translator?: string; quote?: string; is_community_favorite?: boolean }
 type Comment = { id: number; book_id: number; author_name: string; content: string; created_at: string }
 type Like = { book_title: string; count: number }
 
@@ -22,6 +22,7 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
   const [description, setDescription] = useState(book?.description || '')
   const [quote, setQuote] = useState(book?.quote || '')
   const [isNewArrival, setIsNewArrival] = useState(book?.is_new_arrival || false)
+  const [isCommunityFavorite, setIsCommunityFavorite] = useState(book?.is_community_favorite || false)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [coverPreview, setCoverPreview] = useState(book?.cover || '')
   const [saving, setSaving] = useState(false)
@@ -79,6 +80,7 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
       quote,
       cover: coverUrl,
       is_new_arrival: isNewArrival,
+      is_community_favorite: isCommunityFavorite,
     }
 
     if (book) {
@@ -180,6 +182,10 @@ function BookModal({ book, onClose, onSave }: { book: Book | null; onClose: () =
           <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <input type="checkbox" className="toggle" checked={isNewArrival} onChange={(e) => setIsNewArrival(e.target.checked)} />
             <span style={{ fontSize: 14, fontWeight: 600 }}>Show in New Arrivals</span>
+          </div>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <input type="checkbox" className="toggle" checked={isCommunityFavorite} onChange={(e) => setIsCommunityFavorite(e.target.checked)} />
+            <span style={{ fontSize: 14, fontWeight: 600 }}>Show in Community Recommendations</span>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
             <button type="button" className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
@@ -309,6 +315,7 @@ export default function BooksPage() {
                           <th>Author</th>
                           <th>Status</th>
                           <th>New</th>
+                          <th>Community</th>
                           <th>Likes</th>
                           <th>Comments</th>
                           <th></th>
@@ -324,6 +331,7 @@ export default function BooksPage() {
                             <td style={{ color: 'var(--muted)' }}>{book.author}</td>
                             <td><span className={`badge ${book.status === 'NEW' ? 'badge-success' : book.status === 'LIMITED' ? 'badge-warning' : 'badge-primary'}`}>{book.status}</span></td>
                             <td>{book.is_new_arrival ? 'Yes' : 'No'}</td>
+                            <td>{book.is_community_favorite ? 'Yes' : 'No'}</td>
                             <td>{getLikeCount(book.title)}</td>
                             <td>{getCommentCount(book.id)}</td>
                             <td style={{ display: 'flex', gap: 6 }}>

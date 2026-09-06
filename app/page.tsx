@@ -7,7 +7,7 @@ import BottomNav from '@/components/BottomNav'
 import AdminHeader from '@/components/AdminHeader'
 import { AdminContext } from '@/components/AdminGuard'
 
-type Book = { id: number; title: string; author: string; status: string; cover: string; created_at?: string; year?: string; language?: string; translator?: string; quote?: string; description?: string; is_new_arrival?: boolean }
+type Book = { id: number; title: string; author: string; status: string; cover: string; created_at?: string; year?: string; language?: string; translator?: string; quote?: string; description?: string; is_new_arrival?: boolean; is_community_favorite?: boolean }
 type Comment = { id: number; book_id: number; author_name: string; content: string; created_at: string; book_title?: string }
 type Like = { book_title: string; count: number }
 type Setting = { key: string; value: string }
@@ -159,6 +159,20 @@ export default function DashboardPage() {
                     </div>
                   ))
                 )}
+              </div>
+
+              <div className="section-card">
+                <h2 className="section-title">Community Recommendations</h2>
+                {(() => {
+                  const communityBooks = books.filter((b) => b.is_community_favorite)
+                  if (communityBooks.length === 0) return <p style={{ fontSize: 13, color: 'var(--muted)' }}>No books marked for community recommendations</p>
+                  return communityBooks.map((b) => (
+                    <div key={b.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
+                      <span style={{ fontWeight: 600 }}>{b.title}</span>
+                      <span style={{ color: 'var(--muted)', marginLeft: 8, fontSize: 11 }}>{b.author}</span>
+                    </div>
+                  ))
+                })()}
               </div>
 
               <div className="section-card">
