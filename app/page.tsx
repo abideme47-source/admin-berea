@@ -275,7 +275,7 @@ export default function DashboardPage() {
                         <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600 }}>{activeAnnouncement.message}</p>
                         {activeAnnouncement.link_url && <p style={{ margin: '0 0 8px', fontSize: 11, color: 'var(--muted)' }}>{activeAnnouncement.link_url}</p>}
                         <button className="btn btn-sm btn-secondary" onClick={async () => {
-                          await supabase.from('announcements').update({ is_active: false }).eq('id', activeAnnouncement.id)
+                          await supabase.from('announcements').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000')
                           setAnnouncementSaved('Announcement deactivated')
                           setTimeout(() => setAnnouncementSaved(''), 3000)
                           loadData()
