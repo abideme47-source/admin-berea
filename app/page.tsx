@@ -265,8 +265,29 @@ export default function DashboardPage() {
               <div className="section-card">
                 <h2 className="section-title">Announcement Banner</h2>
                 <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Create an announcement to show as a banner on the main site. Only one active announcement is shown at a time.</p>
+                
+                {(() => {
+                  const activeAnnouncement = announcements.find((a) => a.is_active)
+                  if (activeAnnouncement) {
+                    return (
+                      <div style={{ padding: 12, borderRadius: 8, background: '#dcfce7', border: '1px solid #bbf7d0', marginBottom: 16 }}>
+                        <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 700, color: '#16a34a' }}>Active Announcement</p>
+                        <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600 }}>{activeAnnouncement.message}</p>
+                        {activeAnnouncement.link_url && <p style={{ margin: '0 0 8px', fontSize: 11, color: 'var(--muted)' }}>{activeAnnouncement.link_url}</p>}
+                        <button className="btn btn-sm btn-secondary" onClick={async () => {
+                          await supabase.from('announcements').update({ is_active: false }).eq('id', activeAnnouncement.id)
+                          setAnnouncementSaved('Announcement deactivated')
+                          setTimeout(() => setAnnouncementSaved(''), 3000)
+                          loadData()
+                        }}>Deactivate</button>
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+
                 {announcementSaved && (
-                  <div style={{ padding: 10, borderRadius: 8, background: '#dcfce7', color: '#16a34a', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+                  <div style={{ padding: 10, borderRadius: 8, background: announcementSaved.includes('deactivated') ? '#fee2e2' : '#dcfce7', color: announcementSaved.includes('deactivated') ? '#dc2626' : '#16a34a', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
                     {announcementSaved}
                   </div>
                 )}
@@ -303,6 +324,9 @@ export default function DashboardPage() {
                       })
                       if (res.ok) {
                         setAnnouncementSaved('Announcement published!')
+                        setAnnouncementMessage('')
+                        setAnnouncementLink('')
+                        setAnnouncementActive(true)
                         setTimeout(() => setAnnouncementSaved(''), 3000)
                         loadData()
                       }
@@ -312,13 +336,19 @@ export default function DashboardPage() {
                 {announcements.length > 0 && (
                   <div style={{ marginTop: 16 }}>
                     <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 8 }}>Recent Announcements</p>
-                    {announcements.slice(0, 5).map((a) => (
+                    {announcements.map((a) => (
                       <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
                         <span style={{ flex: 1, minWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: 600 }}>{a.message}</span>
                           {a.link_url && <span style={{ color: 'var(--muted)', marginLeft: 6, fontSize: 11 }}>{a.link_url}</span>}
                         </span>
                         <span style={{ fontSize: 11, color: 'var(--muted)' }}>{new Date(a.created_at).toLocaleDateString()}</span>
+                        {!a.is_active && (
+                          <button className="btn btn-sm btn-primary" onClick={async () => {
+                            await supabase.from('announcements').update({ is_active: true }).eq('id', a.id)
+                            loadData()
+                          }}>Activate</button>
+                        )}
                         <button className="btn btn-sm btn-danger" onClick={async () => { await supabase.from('announcements').delete().eq('id', a.id); loadData() }}>Delete</button>
                       </div>
                     ))}
