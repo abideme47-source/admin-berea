@@ -139,8 +139,9 @@ export default function AdminsPage() {
               ) : (
                 <>
                   {apiError && (
-                    <div style={{ padding: 10, borderRadius: 8, background: '#fee2e2', color: '#dc2626', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+                    <div style={{ padding: 12, borderRadius: 10, background: '#fee2e2', color: '#dc2626', fontSize: 13, fontWeight: 700, marginBottom: 16, border: '1px solid #fecaca' }}>
                       {apiError}
+                      <button className="btn btn-sm btn-secondary" onClick={loadData} style={{ marginLeft: 10 }}>Retry</button>
                     </div>
                   )}
                   {!showAdd ? (

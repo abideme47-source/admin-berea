@@ -16,23 +16,25 @@ export default function UsersPage() {
   const [error, setError] = useState('')
   const supabase = createClient()
 
-  useEffect(() => {
-    async function loadUsers() {
-      setLoading(true)
-      try {
-        const res = await fetch('/api/users', { cache: 'no-store' })
-        if (res.ok) {
-          const data = await res.json()
-          setUsers(data.users || [])
-        } else {
-          const data = await res.json()
-          setError(data.error || 'Failed to load users')
-        }
-      } catch (e) {
-        setError('Failed to load users')
+  async function loadUsers() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/users', { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(data.users || [])
+        setError('')
+      } else {
+        const data = await res.json()
+        setError(data.error || 'Failed to load users')
       }
-      setLoading(false)
+    } catch (e) {
+      setError('Failed to load users')
     }
+    setLoading(false)
+  }
+
+  useEffect(() => {
     loadUsers()
   }, [])
 
@@ -95,8 +97,9 @@ export default function UsersPage() {
               ) : (
                 <>
                   {error && (
-                    <div style={{ padding: 10, borderRadius: 8, background: '#fee2e2', color: '#dc2626', fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+                    <div style={{ padding: 12, borderRadius: 10, background: '#fee2e2', color: '#dc2626', fontSize: 13, fontWeight: 700, marginBottom: 16, border: '1px solid #fecaca' }}>
                       {error}
+                      <button className="btn btn-sm btn-secondary" onClick={loadUsers} style={{ marginLeft: 10 }}>Retry</button>
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
