@@ -18,19 +18,19 @@ export default function UsersPage() {
 
   async function loadUsers() {
     setLoading(true)
-    try {
+      try {
         const res = await fetch(`/api/users?_t=${Date.now()}`, { cache: 'no-store' })
-      if (res.ok) {
-        const data = await res.json()
-        setUsers(data.users || [])
-        setError('')
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Failed to load users')
+        if (res.ok) {
+          const data = await res.json()
+          setUsers(data.users || [])
+          setError('')
+        } else {
+          const data = await res.json()
+          setError(`Error ${res.status}: ${data.error || 'Failed to load users'}`)
+        }
+      } catch (e) {
+        setError('Network error: Failed to load users')
       }
-    } catch (e) {
-      setError('Failed to load users')
-    }
     setLoading(false)
   }
 

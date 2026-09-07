@@ -5,7 +5,17 @@ export async function GET() {
   try {
     const supabase = await createClient()
     
-    const { data: usersData } = await supabase.auth.admin.listUsers()
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY is not set')
+      return NextResponse.json({ error: 'Server misconfigured: missing service role key' }, { status: 500 })
+    }
+    
+    const { data: usersData, error: listError } = await supabase.auth.admin.listUsers()
+    
+    if (listError) {
+      console.error('Failed to list users:', listError)
+      return NextResponse.json({ error: 'Failed to list users: ' + listError.message }, { status: 500 })
+    }
     
     const { data: adminsData } = await supabase
       .from('admins')
@@ -26,6 +36,7 @@ export async function GET() {
 
     return NextResponse.json({ users }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } })
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
+    console.error('Failed to fetch users:', error)
+    return NextResponse.json({ error: 'Failed to fetch users: ' + (error as any).message }, { status: 500 })
   }
 }

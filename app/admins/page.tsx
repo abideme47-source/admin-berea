@@ -55,10 +55,12 @@ export default function AdminsPage() {
         usersRes.json(),
       ])
       if (!adminsRes.ok) {
-        throw new Error(adminsData.error || 'Failed to load admins')
+        const err = await adminsRes.json()
+        throw new Error(`Admins API ${adminsRes.status}: ${err.error || 'Failed to load admins'}`)
       }
       if (!usersRes.ok) {
-        throw new Error(usersData.error || 'Failed to load users')
+        const err = await usersRes.json()
+        throw new Error(`Users API ${usersRes.status}: ${err.error || 'Failed to load users'}`)
       }
       const adminsWithEmail = (adminsData.admins || []).map((a: AdminRecord) => ({
         ...a,
