@@ -42,28 +42,37 @@ function BookModal({ book, onClose, onSave, onCreated }: { book: Book | null; on
   }, [book])
 
   async function addQuote() {
-    if (!newQuote.trim() || !book) return
-    const { error } = await supabase.from('quotes').insert({ book_id: book.id, quote: newQuote.trim() })
-    if (error) {
-      setMessage('Error adding quote: ' + error.message)
-      setIsError(true)
+    if (!newQuote.trim()) return
+    if (book) {
+      const { error } = await supabase.from('quotes').insert({ book_id: book.id, quote: newQuote.trim() })
+      if (error) {
+        setMessage('Error adding quote: ' + error.message)
+        setIsError(true)
+      } else {
+        setNewQuote('')
+        supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
+          setBookQuotes(data || [])
+        })
+        import('@/lib/activity').then(({ logActivity }) => logActivity('add_quote', `Added quote to: ${book.title}`))
+      }
     } else {
+      const tempId = 'pending-' + Date.now()
+      setBookQuotes((prev) => [...prev, { id: tempId, quote: newQuote.trim(), pending: true }])
       setNewQuote('')
-      supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
-        setBookQuotes(data || [])
-      })
-      import('@/lib/activity').then(({ logActivity }) => logActivity('add_quote', `Added quote to: ${book.title}`))
     }
   }
 
   async function removeQuote(id: string) {
-    await supabase.from('quotes').delete().eq('id', id)
-    if (book) {
-      supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
-        setBookQuotes(data || [])
-      })
-      import('@/lib/activity').then(({ logActivity }) => logActivity('remove_quote', `Removed quote from: ${book.title}`))
+    if (id.startsWith('pending-')) {
+      setBookQuotes((prev) => prev.filter((q) => q.id !== id))
+      return
     }
+    if (!book) return
+    await supabase.from('quotes').delete().eq('id', id)
+    supabase.from('quotes').select('*').eq('book_id', book.id).then(({ data }: { data: any[] | null }) => {
+      setBookQuotes(data || [])
+    })
+    import('@/lib/activity').then(({ logActivity }) => logActivity('remove_quote', `Removed quote from: ${book.title}`))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -139,6 +148,10 @@ function BookModal({ book, onClose, onSave, onCreated }: { book: Book | null; on
         setMessage('Book added!')
         setIsError(false)
         onSave()
+        const pendingQuotes = bookQuotes.filter((q: any) => q.id?.startsWith('pending-'))
+        if (pendingQuotes.length > 0) {
+          await supabase.from('quotes').insert(pendingQuotes.map((q: any) => ({ book_id: data.id, quote: q.quote })))
+        }
         if (onCreated) {
           onCreated(data as Book)
         } else {
@@ -211,17 +224,17 @@ function BookModal({ book, onClose, onSave, onCreated }: { book: Book | null; on
           </div>
           <div className="form-group">
             <label className="label">Quotes</label>
-            {!book && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 8px' }}>Save the book first to add quotes.</p>}
-            {bookQuotes.length === 0 && book && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 8px' }}>No quotes yet</p>}
+            {bookQuotes.length === 0 && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 8px' }}>No quotes yet</p>}
             {bookQuotes.map((q) => (
               <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{q.quote}"</span>
+                {q.pending && <span style={{ fontSize: 11, color: 'var(--muted)' }}>(will be saved with book)</span>}
                 <button type="button" className="btn btn-sm btn-danger" onClick={() => removeQuote(q.id)}>Remove</button>
               </div>
             ))}
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <input className="input" value={newQuote} onChange={(e) => setNewQuote(e.target.value)} placeholder="Add a quote..." style={{ flex: 1 }} disabled={!book} />
-              <button type="button" className="btn btn-sm btn-primary" onClick={addQuote} disabled={!book}>Add</button>
+              <input className="input" value={newQuote} onChange={(e) => setNewQuote(e.target.value)} placeholder="Add a quote..." style={{ flex: 1 }} />
+              <button type="button" className="btn btn-sm btn-primary" onClick={addQuote}>Add</button>
             </div>
           </div>
           <div className="form-group">
