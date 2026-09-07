@@ -21,7 +21,7 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json({ admins })
+    return NextResponse.json({ admins }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch admins' }, { status: 500 })
   }

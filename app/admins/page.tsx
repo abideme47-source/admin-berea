@@ -47,8 +47,8 @@ export default function AdminsPage() {
     setApiError('')
     try {
       const [adminsRes, usersRes] = await Promise.all([
-        fetch('/api/admins', { cache: 'no-store' }),
-        fetch('/api/users', { cache: 'no-store' }),
+        fetch(`/api/admins?_t=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`/api/users?_t=${Date.now()}`, { cache: 'no-store' }),
       ])
       const [adminsData, usersData] = await Promise.all([
         adminsRes.json(),

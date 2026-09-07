@@ -24,7 +24,7 @@ export async function GET() {
       providers: u.identities?.map((i: any) => i.provider) || [],
     }))
 
-    return NextResponse.json({ users })
+    return NextResponse.json({ users }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
   }
