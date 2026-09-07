@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       .insert({
         message: body.message,
         link_url: body.link_url || null,
+        link_text: body.link_text || 'Learn More',
         is_active: body.is_active ?? true,
       })
       .select()

@@ -13,7 +13,7 @@ type Comment = { id: number; book_id: number; author_name: string; content: stri
 type Like = { book_title: string; count: number }
 type Setting = { key: string; value: string }
 type Quote = { id: string; book_id: number; quote: string; book_title?: string; book_author?: string }
-type Announcement = { id: string; message: string; link_url?: string; is_active: boolean; created_at: string }
+type Announcement = { id: string; message: string; link_url?: string; link_text?: string; is_active: boolean; created_at: string }
 
 function TrendingBook({ title, count, label }: { title: string; count: number; label: string }) {
   return (
@@ -42,7 +42,7 @@ export default function DashboardPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [announcementMessage, setAnnouncementMessage] = useState('')
   const [announcementLink, setAnnouncementLink] = useState('')
-  const [announcementActive, setAnnouncementActive] = useState(true)
+  const [announcementLinkText, setAnnouncementLinkText] = useState('')
   const [announcementSaved, setAnnouncementSaved] = useState('')
   const [totalBooks, setTotalBooks] = useState(0)
   const [totalOrders, setTotalOrders] = useState(0)
@@ -97,7 +97,7 @@ export default function DashboardPage() {
       if (activeAnnouncement) {
         setAnnouncementMessage(activeAnnouncement.message)
         setAnnouncementLink(activeAnnouncement.link_url || '')
-        setAnnouncementActive(activeAnnouncement.is_active)
+        setAnnouncementLinkText(activeAnnouncement.link_text || '')
       }
     }
     
@@ -306,37 +306,33 @@ export default function DashboardPage() {
                     onChange={(e) => setAnnouncementLink(e.target.value)}
                     placeholder="Link URL (optional)"
                   />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      id="announcement-active"
-                      type="checkbox"
-                      checked={announcementActive}
-                      onChange={(e) => setAnnouncementActive(e.target.checked)}
-                    />
-                    <label htmlFor="announcement-active" style={{ fontSize: 13 }}>Active</label>
-                    <div style={{ flex: 1 }} />
-                    <button className="btn btn-primary" onClick={async () => {
-                      if (!announcementMessage.trim()) return
-                      const res = await fetch('/api/announcements', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: announcementMessage.trim(), link_url: announcementLink.trim() || null, is_active: announcementActive }),
-                      })
-                      if (res.ok) {
-                        setAnnouncementSaved('Announcement published!')
-                        setAnnouncementMessage('')
-                        setAnnouncementLink('')
-                        setAnnouncementActive(true)
-                        setTimeout(() => setAnnouncementSaved(''), 3000)
-                        loadData()
-                      }
-                    }}>Publish Announcement</button>
-                  </div>
+                  <input
+                    className="input"
+                    value={announcementLinkText}
+                    onChange={(e) => setAnnouncementLinkText(e.target.value)}
+                    placeholder="Link button text (default: Learn More)"
+                  />
+                  <button className="btn btn-primary" onClick={async () => {
+                    if (!announcementMessage.trim()) return
+                    const res = await fetch('/api/announcements', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ message: announcementMessage.trim(), link_url: announcementLink.trim() || null, link_text: announcementLinkText.trim() || 'Learn More', is_active: true }),
+                    })
+                    if (res.ok) {
+                      setAnnouncementSaved('Announcement published!')
+                      setAnnouncementMessage('')
+                      setAnnouncementLink('')
+                      setAnnouncementLinkText('')
+                      setTimeout(() => setAnnouncementSaved(''), 3000)
+                      loadData()
+                    }
+                  }}>Publish Announcement</button>
                 </div>
                 {announcements.length > 0 && (
                   <div style={{ marginTop: 16 }}>
                     <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 8 }}>Recent Announcements</p>
-                    {announcements.map((a) => (
+                    {announcements.slice(0, 3).map((a) => (
                       <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--line)', fontSize: 13 }}>
                         <span style={{ flex: 1, minWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: 600 }}>{a.message}</span>
